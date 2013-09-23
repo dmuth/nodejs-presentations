@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<!--
+Append ?print-pdf to the URL to to use the printing stylesheet.
+The result can then be exported as a PDF and uploaded to Slideshare.
+-->
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Presenting: Seq</title>
+
+		<meta name="description" content="A framework for easily creating beautiful presentations using HTML">
+		<meta name="author" content="Hakim El Hattab">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<!--
+		<link rel="stylesheet" href="css/reveal.min.css">
+		-->
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/default.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+
+<section>
+
+<h1>Presenting:</h1>
+<h1>Seq</h1>
+
+</section>
+
+
+<section>
+
+<h1>About Me</h1>
+<br/>
+
+Who I am: Douglas Muth
+<br/>
+<br/>
+How to contact me: dmuth@dmuth.org
+<br/>
+<br/>
+What I do: Software Engineer ...mostly.
+<br/>
+<br/>
+
+</section>
+
+
+<section>
+
+<h1>The Problem</h1>
+<br/>
+
+Flow control in node.js. 
+<br/>
+Node.js is a callback-heavy language.
+<br/>
+<br/>
+
+Often, it looks like this:
+
+<pre><code data-trim contenteditable class="javascript">
+
+db.query("SELECT ...", function(error, results) {
+    if (!error) {
+        db.query("UPDATE ...", function(error, results) {
+            if (!error) {
+                db.query("INSERT ...", function(error, results) {
+                    // Oh God, why?
+                }
+            }
+        });
+    }
+});
+
+</code></pre>
+
+Also known as "boomerang code"!
+
+</section>
+
+
+<section>
+
+<h1>Seq 101</h1>
+<br/>
+<h3>Installation</h3>
+<pre><code data-trim contenteditable class="bash">
+$ npm install seq
+</code></pre>
+
+That was easy!
+
+</section>
+
+
+<section>
+
+<h1>Seq 101</h1>
+<br/>
+
+<h3>Usage</h3>
+
+<pre><code data-trim contenteditable class="javascript">
+var seq = require("seq");
+
+seq().seq(function() {
+	db.query("SELECT ...", this);
+
+}).seq(function(results) {
+	db.query("UPDATE ...", this);
+
+}).seq(function(results) {
+	db.query("INSERT ...", this); // Pretty sweet!
+
+});
+</code></pre>
+<br/>
+
+"this()" is the callback which goes to the next block of code
+
+</section>
+
+
+<section>
+
+<h1>Seq 101</h1>
+<br/>
+
+<h3>When things go wrong</h3>
+
+<pre><code data-trim contenteditable class="javascript">
+seq().seq(function() {
+	db.query("SELECT ...", this);
+
+}).seq(function(results) {
+	this(new Error("Shake things up a little"));
+
+}).seq(function(results) {
+	// This will never run
+	db.query("INSERT ...", this);
+
+}).catch(function(error) {
+	// I got this!
+
+});
+</code></pre>
+</section>
+
+
+<section>
+
+<h1>How to Seq</h1>
+<br/>
+
+<h3>It's a trap!</h3>
+
+<pre><code data-trim contenteditable class="javascript">
+seq().seq(function() {
+	db.query("SELECT ...", this);
+
+}).seq(function(results) {
+	seq().seq(function() {
+		// Do something
+
+	}).seq(function() {
+		// Do something else
+		// This won't go to the outer Seq
+		this();
+
+	}).seq(funciton() {
+		// This gets called by accident
+
+	});
+
+}).seq(function(results) {
+	// This will never run
+	db.query("INSERT ...", this);
+
+});
+</code></pre>
+
+<br/>
+Be careful when nesting usage of Seq, or the wrong callback may fire.
+
+</section>
+
+<section>
+<h1>Seq 101</h1>
+<br/>
+
+<h3>Safe nesting of Seq</h3>
+
+<pre><code data-trim contenteditable class="javascript">
+seq().seq(function() {
+	db.query("SELECT ...", this);
+
+}).seq(function(results) {
+	var cb = this;
+	seq().seq(function() {
+		// Do something
+
+	}).seq(function() {
+		// Do something else
+		// This won't go to the outer Seq
+		cb();
+
+	}).seq(funciton() {
+		// This never gets called
+
+	});
+
+}).seq(function(results) {
+	// This gets called
+	db.query("INSERT ...", this);
+
+});
+</code></pre>
+
+<br/>
+Remember, functions are variables too!
+
+</section>
+
+
+<section>
+<h1>Advanced Seq</h1>
+
+<pre><code data-trim contenteditable class="javascript">
+var fs = require('fs');
+var exec = require('child_process').exec;
+
+var Seq = require('seq');
+Seq()
+    .seq(function step1() {
+        exec('whoami', this)
+    })
+    .par(function step2(who) {
+        exec('groups ' + who, this);
+    })
+    .par(function step3(who) {
+        fs.readFile(__filename, 'ascii', this);
+    })
+    .seq(function step4(groups, src) {
+        console.log('Groups: ' + groups.trim());
+        console.log('This file has ' + src.length + ' bytes');
+    })
+;
+</code></pre>
+
+Order of execution is as follows:
+<br/>
+<ul>
+<li class="fragment">step1()</li>
+<li class="fragment">step2() and step3() are executed in parallel</li>
+<li class="fragment">step4() ONLY when step2() and step3() complete</li>
+</ul>
+
+</section>
+
+
+<section>
+
+<h1>Even more seq</h1>
+
+<br/>
+
+<span class="fragment">
+Process an array of elements:
+<br/>
+<ul>
+<li>forEach()</li>
+<li>seqEach()</li>
+<li>parEach()</li>
+</ul>
+<br/>
+<br/>
+</span>
+
+<span class="fragment">
+Play around with "this":
+<br/>
+<ul>
+<li>this.stack</li>
+<li>this.vars</li>
+<li>this.into(key)</li>
+<li>this.args</li>
+</ul>
+<br/>
+<br/>
+</span>
+
+<span class="fragment">
+Not for the faint of heart, and WAY beyond the scope of this presentation.
+</span>
+
+</section>
+
+
+<section>
+
+<h1>Further Reading</h1>
+<br/>
+<br/>
+<br/>
+
+The Seq repo:
+<br/>
+<a href="https://github.com/substack/node-seq/">https://github.com/substack/node-seq/</a>
+
+</section>
+
+
+<section>
+<h1>On the web</h1>
+<br/>
+<br/>
+<br/>
+
+<a href="https://github.com/dmuth/nodejs-presentations">https://github.com/dmuth/nodejs-presentations</a>
+<br/>
+<br/>
+
+Feel free to clone and add your own presentations based off of template.html!
+
+</section>
+
+
+<section>
+<h1>Questions?</h1>
+
+<img src="images/question.jpg" />
+
+</section>
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
