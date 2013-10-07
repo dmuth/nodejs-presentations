@@ -60,10 +60,14 @@ The result can then be exported as a PDF and uploaded to Slideshare.
 Who I am: Douglas Muth
 <br/>
 <br/>
-How to contact me: dmuth@dmuth.org
+How to contact me: 
+<a href="mailto:dmuth@dmuth.org">dmuth@dmuth.org</a>
 <br/>
 <br/>
-What I do: Software Engineer ...mostly.
+What I do: Software Engineer 
+<span class="fragment">
+...mostly.
+</span>
 <br/>
 <br/>
 
@@ -110,7 +114,9 @@ Also known as "boomerang code"!
 <br/>
 <h3>Installation</h3>
 <pre><code data-trim contenteditable class="bash">
+&nbsp;
 $ npm install seq
+&nbsp;
 </code></pre>
 
 That was easy!
@@ -227,7 +233,7 @@ seq().seq(function() {
 	}).seq(function() {
 		// Do something else
 		// This won't go to the outer Seq
-		cb();
+		         cb();
 
 	}).seq(funciton() {
 		// This never gets called
@@ -272,13 +278,18 @@ Seq()
 ;
 </code></pre>
 
-Order of execution is as follows:
-<br/>
+<div class="fragment">Order of execution is as follows:</div>
 <ul>
 <li class="fragment">step1()</li>
 <li class="fragment">step2() and step3() are executed in parallel</li>
 <li class="fragment">step4() ONLY when step2() and step3() complete</li>
 </ul>
+
+<br/>
+<br/>
+<div class="fragment">
+You don't <b>need</b> to be this clever!
+</div>
 
 </section>
 
@@ -345,7 +356,7 @@ The Seq repo:
 <br/>
 <br/>
 
-Feel free to clone and add your own presentations based off of template.html!
+Feel free to clone and add your own presentations based off of <b>template.html</b>!
 
 </section>
 
