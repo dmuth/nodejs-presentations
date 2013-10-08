@@ -226,7 +226,7 @@ seq().seq(function() {
 	db.query("SELECT ...", this);
 
 }).seq(function(results) {
-	var cb = this;
+	var cb = this; // this() by any other name..
 	seq().seq(function() {
 		// Do something
 
